@@ -3,13 +3,15 @@ package com.transporindo.truckingsby;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.graphics.Bitmap;
+import android.media.Image;
 import android.os.Build;
-import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.View;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
@@ -17,14 +19,16 @@ public class MainActivity extends AppCompatActivity {
     private WebView view;
     private ProgressDialog progressDialog;
     private BroadcastReceiver mNetworkReceiver;
+    private ImageView logo;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         progressDialog = new ProgressDialog(this);
         progressDialog.setMessage("Loading...");
+        progressDialog.setCancelable(false);
         progressDialog.show();
-
+        logo = (ImageView) findViewById(R.id.logo);
         if (!DetectConnection.checkInternetConnection(this)) {
             Toast.makeText(getApplicationContext(), "No Internet!", Toast.LENGTH_SHORT).show();
         } else {
@@ -33,14 +37,18 @@ public class MainActivity extends AppCompatActivity {
 
             view.setWebViewClient(new MyBrowser());
             view.getSettings().setJavaScriptEnabled(true);
-            if (Build.VERSION.SDK_INT >= 19) {
-                view.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
-            }
 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                // chromium, enable hardware acceleration
+                view.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+            } else {
+                // older android version, disable hardware acceleration
+                view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+            }
             view.loadUrl("about:blank");
             view.clearCache(true);
             view.getSettings().setSupportMultipleWindows(true);
-            view.loadUrl("http://36.81.248.22/ci-android-sby/");
+            view.loadUrl("http://36.81.248.22:8888/ci-android-sby/");
         }
 
 
@@ -59,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         }
         @Override
         public void onPageFinished(WebView view, String url) {
+            logo.setVisibility(View.GONE);
             if (progressDialog.isShowing() ) {
                 progressDialog.dismiss();
             }
@@ -72,13 +81,6 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-
-    @Override
-    protected void onDestroy() {
-        view.clearHistory();
-        super.onDestroy();
-    }
-
     @Override
     public void onBackPressed() {
         if (view.isFocused() && view.canGoBack()) {
